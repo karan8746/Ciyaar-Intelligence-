@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ciyaar-intelligence"
+version = "1.0.0"
+description = "Universal Quantum-Neural AI Platform for Next-Gen Problem Solving"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    {name = "Ciyaar Intelligence Team"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+    "torch>=2.1.0",
+    "tensorflow>=2.15.0",
+    "numpy>=1.24.0",
+    "qiskit>=0.45.0",
+    "pennylane>=0.33.0",
+    "fastapi>=0.104.0",
+    "pydantic>=2.5.0",
+    "loguru>=0.7.0",
+    "hydra-core>=1.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.12.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "coverage>=7.3.0",
+]
+
+gpu = [
+    "cupy-cuda12x>=12.0.0",
+]
+
+quantum = [
+    "cirq>=1.3.0",
+    "quantum-gate>=0.1.0",
+]
+
+industry = [
+    "opencv-python>=4.8.0",
+    "rdkit-pypi>=2023.9.1",
+    "biopython>=1.82",
+    "yfinance>=0.2.18",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests as requiring GPU",
+    "quantum: marks tests as requiring quantum simulators",
+]
+
+[tool.coverage.run]
+source = ["ciyaar_intelligence"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
