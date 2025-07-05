@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciyaar - AI Trading Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .chat-bubble {
+            border-radius: 20px 20px 20px 0;
+            position: relative;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .user-bubble {
+            border-radius: 20px 20px 0 20px;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .glow {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        
+        .tradingview-widget-container {
+            height: 500px;
+            width: 100%;
+        }
+        
+        .option-chain-table {
+            font-size: 0.8rem;
+        }
+        
+        .option-chain-table th {
+            background-color: #1e293b;
+            color: white;
+        }
+        
+        .option-chain-table tr:nth-child(even) {
+            background-color: #f1f5f9;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        
+        #aiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .sector-card {
+            transition: all 0.3s ease;
+        }
+        
+        .sector-card:hover {
+            transform: scale(1.03);
+        }
+        
+        .voice-pulse {
+            animation: voicePulse 1.5s infinite;
+        }
+        
+        @keyframes voicePulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        
+        .mood-selector .active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        
+        .trade-log-card {
+            transition: all 0.3s ease;
+        }
+        
+        .trade-log-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .language-selector {
+            transition: all 0.3s ease;
+        }
+        
+        .language-selector:hover {
+            transform: scale(1.1);
+        }
+        
+        .broker-card {
+            transition: all 0.3s ease;
+        }
+        
+        .broker-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* New styles for advanced features */
+        .indicator-card {
+            transition: all 0.3s ease;
+        }
+        
+        .indicator-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .strategy-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .strategy-card:hover {
+            border-left-color: #3b82f6;
+        }
+        
+        .voice-wave {
+            display: flex;
+            justify-content: space-between;
+            width: 50px;
+            height: 30px;
+            align-items: flex-end;
+        }
+        
+        .voice-wave span {
+            width: 4px;
+            background-color: #3b82f6;
+            border-radius: 2px;
+            animation: voiceWave 1.5s ease infinite alternate;
+        }
+        
+        .voice-wave span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .voice-wave span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        .voice-wave span:nth-child(4) {
+            animation-delay: 0.6s;
+        }
+        
+        .voice-wave span:nth-child(5) {
+            animation-delay: 0.8s;
+        }
+        
+        @keyframes voiceWave {
+            0% { height: 5px; }
+            100% { height: 30px; }
+        }
+        
+        .transcript-container {
+            max-height: 100px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            background-color: #f8fafc;
+        }
+        
+        /* Dark mode styles */
+        .dark {
+            background-color: #111827;
+            color: #f3f4f6;
+        }
+        
+        .dark .bg-white {
+            background-color: #1f2937;
+            color: #f3f4f6;
+        }
+        
+        .dark .bg-gray-50 {
+            background-color: #374151;
+        }
+        
+        .dark .text-gray-800 {
+            color: #f3f4f6;
+        }
+        
+        .dark .bg-blue-50 {
+            background-color: #1e3a8a;
+        }
+        
+        .dark .bg-green-50 {
+            background-color: #14532d;
+        }
+        
+        .dark .bg-red-50 {
+            background-color: #7f1d1d;
+        }
+        
+        .dark .bg-gray-100 {
+            background-color: #4b5563;
+        }
+        
+        /* Trading signals colors */
+        .signal-buy {
+            background-color: rgba(74, 222, 128, 0.1);
+            border-color: rgba(74, 222, 128, 0.3);
+        }
+        
+        .signal-sell {
+            background-color: rgba(248, 113, 113, 0.1);
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+        
+        .signal-neutral {
+            background-color: rgba(96, 165, 250, 0.1);
+            border-color: rgba(96, 165, 250, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- 3D Background Canvas -->
+    <div id="aiCanvas"></div>
+    
+    <!-- Auth Modal -->
+    <div id="authModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-8 w-full max-w-md relative dark:bg-gray-800">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-6 gradient-text text-center">Welcome to Ciyaar AI</h2>
+            
+            <div id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2 dark:text-gray-300">Email</label>
+                    <input type="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2 dark:text-gray-300">Password</label>
+                    <input type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition mb-4">Login</button>
+                <p class="text-center text-gray-600 dark:text-gray-300">Don't have an account? <button onclick="showSignupForm()" class="text-blue-600 hover:underline dark:text-blue-400">Sign up</button></p>
+                <div class="flex items-center justify-center mt-6">
+                    <button class="mx-2 p-2 rounded-full border hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fab fa-google text-red-500"></i>
+                    </button>
+                    <button class="mx-2 p-2 rounded-full border hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fab fa-facebook-f text-blue-600"></i>
+                    </button>
+                    <button class="mx-2 p-2 rounded-full border hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fab fa-apple text-gray-800 dark:text-gray-300"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="signupForm" class="hidden">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2 dark:text-gray-300">Full Name</label>
+                    <input type="text" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2 dark:text-gray-300">Email</label>
+                    <input type="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2 dark:text-gray-300">Password</label>
+                    <input type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2 dark:text-gray-300">Confirm Password</label>
+                    <input type="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition mb-4">Sign Up</button>
+                <p class="text-center text-gray-600 dark:text-gray-300">Already have an account? <button onclick="showLoginForm()" class="text-blue-600 hover:underline dark:text-blue-400">Login</button></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Voice Assistant Modal -->
+    <div id="voiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-8 w-full max-w-md relative dark:bg-gray-800">
+            <button onclick="closeVoiceModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-6 gradient-text text-center">Voice Assistant</h2>
+            
+            <div class="text-center mb-6">
+                <div id="voiceAnimation" class="flex justify-center mb-4">
+                    <div class="voice-wave">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <p id="voiceStatus" class="text-gray-600 dark:text-gray-300">Click the microphone to start speaking</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2 dark:text-gray-300">Language</label>
+                <select id="voiceLanguage" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <option value="en-US">English (US)</option>
+                    <option value="hi-IN">Hindi (India)</option>
+                    <option value="es-ES">Spanish (Spain)</option>
+                    <option value="fr-FR">French (France)</option>
+                    <option value="de-DE">German (Germany)</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2 dark:text-gray-300">Your Speech</label>
+                <div id="voiceTranscript" class="transcript-container dark:bg-gray-700 dark:text-white"></div>
+            </div>
+            
+            <button id="startListeningBtn" onclick="startVoiceRecognition()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+                <i class="fas fa-microphone mr-2"></i>
+                <span>Start Speaking</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl mr-3">
+                    CA
+                </div>
+                <h1 class="text-2xl font-bold gradient-text">Ciyaar AI Trading Assistant</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="relative group">
+                    <button id="languageBtn" class="flex items-center space-x-1 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition dark:bg-gray-700 dark:hover:bg-gray-600">
+                        <i class="fas fa-globe"></i>
+                        <span>English</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <div id="languageDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden group-hover:block hover:block dark:bg-gray-800">
+                        <div class="py-1">
+                            <button onclick="changeLanguage('en')" class="language-selector block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center dark:text-gray-300 dark:hover:bg-gray-700">
+                                <span class="mr-2">🇬🇧</span> English
+                            </button>
+                            <button onclick="changeLanguage('hi')" class="language-selector block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center dark:text-gray-300 dark:hover:bg-gray-700">
+                                <span class="mr-2">🇮🇳</span> हिंदी (Hindi)
+                            </button>
+                            <button onclick="changeLanguage('es')" class="language-selector block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center dark:text-gray-300 dark:hover:bg-gray-700">
+                                <span class="mr-2">🇪🇸</span> Español
+                            </button>
+                            <button onclick="changeLanguage('fr')" class="language-selector block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left flex items-center dark:text-gray-300 dark:hover:bg-gray-700">
+                                <span class="mr-2">🇫🇷</span> Français
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="openAuthModal()" id="authBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+                    <i class="fas fa-user mr-2"></i>
+                    <span>Login</span>
+                </button>
+                
+                <button id="darkModeToggle" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition dark:bg-gray-700 dark:hover:bg-gray-600">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Left Sidebar -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- AI Mood Selector -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">AI Mood</h3>
+                    <div class="mood-selector grid grid-cols-3 gap-2">
+                        <button onclick="setMood('professional')" class="p-2 bg-blue-100 rounded-lg flex flex-col items-center transition dark:bg-blue-900 dark:bg-opacity-30">
+                            <i class="fas fa-briefcase text-blue-600 mb-1 dark:text-blue-400"></i>
+                            <span class="text-xs dark:text-gray-300">Professional</span>
+                        </button>
+                        <button onclick="setMood('friendly')" class="p-2 bg-green-100 rounded-lg flex flex-col items-center transition active dark:bg-green-900 dark:bg-opacity-30">
+                            <i class="fas fa-smile text-green-600 mb-1 dark:text-green-400"></i>
+                            <span class="text-xs dark:text-gray-300">Friendly</span>
+                        </button>
+                        <button onclick="setMood('excited')" class="p-2 bg-purple-100 rounded-lg flex flex-col items-center transition dark:bg-purple-900 dark:bg-opacity-30">
+                            <i class="fas fa-star text-purple-600 mb-1 dark:text-purple-400"></i>
+                            <span class="text-xs dark:text-gray-300">Excited</span>
+                        </button>
+                        <button onclick="setMood('curious')" class="p-2 bg-yellow-100 rounded-lg flex flex-col items-center transition dark:bg-yellow-900 dark:bg-opacity-30">
+                            <i class="fas fa-question text-yellow-600 mb-1 dark:text-yellow-400"></i>
+                            <span class="text-xs dark:text-gray-300">Curious</span>
+                        </button>
+                        <button onclick="setMood('cautious')" class="p-2 bg-orange-100 rounded-lg flex flex-col items-center transition dark:bg-orange-900 dark:bg-opacity-30">
+                            <i class="fas fa-shield-alt text-orange-600 mb-1 dark:text-orange-400"></i>
+                            <span class="text-xs dark:text-gray-300">Cautious</span>
+                        </button>
+                        <button onclick="setMood('hindi')" class="p-2 bg-red-100 rounded-lg flex flex-col items-center transition dark:bg-red-900 dark:bg-opacity-30">
+                            <i class="fas fa-hands-helping text-red-600 mb-1 dark:text-red-400"></i>
+                            <span class="text-xs dark:text-gray-300">हिंदी (Hindi)</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Voice Assistant -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">Voice Assistant</h3>
+                    <button onclick="openVoiceModal()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
+                        <i class="fas fa-microphone mr-2"></i>
+                        <span>Start Voice Chat</span>
+                    </button>
+                    <div class="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                        <p>Ask about stocks, trends, or analysis in your preferred language.</p>
+                    </div>
+                </div>
+                
+                <!-- Technical Indicators -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">Technical Indicators</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="indicator-card bg-gray-50 p-2 rounded-lg text-center cursor-pointer dark:bg-gray-700" onclick="addIndicator('rsi')">
+                            <i class="fas fa-chart-line text-blue-500 mb-1 dark:text-blue-400"></i>
+                            <span class="text-xs dark:text-gray-300">RSI</span>
+                        </div>
+                        <div class="indicator-card bg-gray-50 p-2 rounded-lg text-center cursor-pointer dark:bg-gray-700" onclick="addIndicator('macd')">
+                            <i class="fas fa-chart-bar text-purple-500 mb-1 dark:text-purple-400"></i>
+                            <span class="text-xs dark:text-gray-300">MACD</span>
+                        </div>
+                        <div class="indicator-card bg-gray-50 p-2 rounded-lg text-center cursor-pointer dark:bg-gray-700" onclick="addIndicator('bollinger')">
+                            <i class="fas fa-chart-area text-green-500 mb-1 dark:text-green-400"></i>
+                            <span class="text-xs dark:text-gray-300">Bollinger</span>
+                        </div>
+                        <div class="indicator-card bg-gray-50 p-2 rounded-lg text-center cursor-pointer dark:bg-gray-700" onclick="addIndicator('sma')">
+                            <i class="fas fa-chart-line text-yellow-500 mb-1 dark:text-yellow-400"></i>
+                            <span class="text-xs dark:text-gray-300">SMA</span>
+                        </div>
+                        <div class="indicator-card bg-gray-50 p-2 rounded-lg text-center cursor-pointer dark:bg-gray-700" onclick="addIndicator('ema')">
+                            <i class="fas fa-chart-line text-red-500 mb-1 dark:text-red-400"></i>
+                            <span class="text-xs dark:text-gray-300">EMA</span>
+                        </div>
+                        <div class="indicator-card bg-gray-50 p-2 rounded-lg text-center cursor-pointer dark:bg-gray-700" onclick="addIndicator('stochastic')">
+                            <i class="fas fa-wave-square text-indigo-500 mb-1 dark:text-indigo-400"></i>
+                            <span class="text-xs dark:text-gray-300">Stochastic</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trading Strategies -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">Trading Strategies</h3>
+                    <div class="space-y-2">
+                        <div class="strategy-card bg-gray-50 p-3 rounded-lg cursor-pointer dark:bg-gray-700" onclick="analyzeStrategy('breakout')">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium dark:text-gray-300">Breakout Trading</span>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1 dark:text-gray-400">Identify and trade breakouts from key levels</div>
+                        </div>
+                        <div class="strategy-card bg-gray-50 p-3 rounded-lg cursor-pointer dark:bg-gray-700" onclick="analyzeStrategy('pullback')">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium dark:text-gray-300">Pullback Strategy</span>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1 dark:text-gray-400">Trade retracements in trending markets</div>
+                        </div>
+                        <div class="strategy-card bg-gray-50 p-3 rounded-lg cursor-pointer dark:bg-gray-700" onclick="analyzeStrategy('mean-reversion')">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium dark:text-gray-300">Mean Reversion</span>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1 dark:text-gray-400">Trade price returns to average levels</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Market News -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">Latest Market News</h3>
+                    <div class="space-y-3">
+                        <div class="news-card p-3 border rounded-lg cursor-pointer dark:border-gray-700" onclick="showNewsDetail('n1')">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-medium text-sm dark:text-gray-300">RBI Keeps Repo Rate Unchanged at 6.5%</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">2h ago</span>
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">The Reserve Bank of India maintained status quo on policy rates as expected...</div>
+                        </div>
+                        <div class="news-card p-3 border rounded-lg cursor-pointer dark:border-gray-700" onclick="showNewsDetail('n2')">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-medium text-sm dark:text-gray-300">Infosys Q4 Results Beat Estimates</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">4h ago</span>
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">IT major reports 12% YoY growth in net profit, announces dividend...</div>
+                        </div>
+                        <div class="news-card p-3 border rounded-lg cursor-pointer dark:border-gray-700" onclick="showNewsDetail('n3')">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-medium text-sm dark:text-gray-300">Global Markets Rally on Fed Rate Cut Hopes</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">6h ago</span>
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">US stocks hit record highs as inflation data fuels rate cut expectations...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Chat Area -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-md p-4 h-full dark:bg-gray-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold gradient-text">Ciyaar AI Assistant</h2>
+                        <div class="flex items-center space-x-2">
+                            <button id="voiceBtn" onclick="openVoiceModal()" class="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition dark:bg-blue-900 dark:bg-opacity-30 dark:text-blue-400">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button class="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Messages -->
+                    <div id="chatContainer" class="h-96 overflow-y-auto mb-4 space-y-3 pr-2">
+                        <!-- AI Introduction -->
+                        <div class="flex">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-2">
+                                CA
+                            </div>
+                            <div class="bg-blue-50 text-gray-800 p-3 rounded-lg chat-bubble max-w-xs lg:max-w-md dark:bg-blue-900 dark:bg-opacity-30 dark:text-white">
+                                <p>Namaste! 🙏 I'm Ciyaar, your AI trading assistant. How can I help you today?</p>
+                                <p class="mt-2 text-sm dark:text-gray-300">You can ask me about:</p>
+                                <ul class="list-disc pl-5 text-sm mt-1 dark:text-gray-300">
+                                    <li>Stock analysis and trends</li>
+                                    <li>Technical indicators</li>
+                                    <li>Market news and updates</li>
+                                    <li>Trading strategies</li>
+                                </ul>
+                                <p class="mt-2 text-sm dark:text-gray-300">Try saying: <span class="italic">"Reliance ka latest trend kya hai?"</span> or <span class="italic">"Show me Nifty 50 chart with RSI"</span></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Sample Market Update -->
+                        <div class="flex">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-2">
+                                CA
+                            </div>
+                            <div class="bg-blue-50 text-gray-800 p-3 rounded-lg chat-bubble max-w-xs lg:max-w-md dark:bg-blue-900 dark:bg-opacity-30 dark:text-white">
+                                <p class="font-medium">📊 Market Update (10:45 AM IST)</p>
+                                <div class="mt-2 space-y-1">
+                                    <div class="flex justify-between">
+                                        <span class="dark:text-gray-300">Nifty 50</span>
+                                        <span class="font-medium dark:text-gray-300">22,415.65 <span class="text-green-500">(+1.25%)</span></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="dark:text-gray-300">Sensex</span>
+                                        <span class="font-medium dark:text-gray-300">73,895.54 <span class="text-green-500">(+1.12%)</span></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="dark:text-gray-300">Bank Nifty</span>
+                                        <span class="font-medium dark:text-gray-300">48,732.10 <span class="text-red-500">(-0.45%)</span></span>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-sm dark:text-gray-300">IT and Pharma sectors leading gains today. Banking sector under pressure.</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Sample Stock Analysis -->
+                        <div class="flex justify-end">
+                            <div class="bg-blue-100 text-gray-800 p-3 rounded-lg user-bubble max-w-xs lg:max-w-md dark:bg-blue-800 dark:bg-opacity-30 dark:text-white">
+                                <p>Reliance ka latest trend kya hai?</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-2">
+                                CA
+                            </div>
+                            <div class="bg-blue-50 text-gray-800 p-3 rounded-lg chat-bubble max-w-xs lg:max-w-md dark:bg-blue-900 dark:bg-opacity-30 dark:text-white">
+                                <p class="font-medium">Reliance Industries Ltd (RELIANCE.NS) - Current Analysis</p>
+                                <div class="mt-2">
+                                    <div class="flex justify-between">
+                                        <span class="dark:text-gray-300">Current Price:</span>
+                                        <span class="font-medium dark:text-gray-300">₹2,845.60</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="dark:text-gray-300">Today's Change:</span>
+                                        <span class="font-medium text-green-500 dark:text-green-400">+1.8% (₹50.20)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="dark:text-gray-300">52 Week Range:</span>
+                                        <span class="font-medium dark:text-gray-300">₹2,180 - ₹3,025</span>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <p class="text-sm dark:text-gray-300"><span class="font-medium">Technical View:</span> Stock is trading above its 50-day and 200-day moving averages. RSI at 62 suggests mildly overbought conditions but with bullish momentum.</p>
+                                    <p class="text-sm mt-1 dark:text-gray-300"><span class="font-medium">Key Levels:</span> Support at ₹2,780, Resistance at ₹2,920</p>
+                                </div>
+                                <div class="mt-3 p-2 bg-blue-100 rounded dark:bg-blue-800 dark:bg-opacity-30">
+                                    <p class="text-xs font-medium dark:text-gray-300">Latest News: Reliance Jio announces new 5G plans starting at ₹299</p>
+                                </div>
+                                <button onclick="showChart('RELIANCE')" class="mt-2 text-sm text-blue-600 hover:underline dark:text-blue-400">View Detailed Chart Analysis →</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart Container -->
+                    <div id="chartContainer" class="h-64 mb-4 bg-gray-50 rounded-lg hidden dark:bg-gray-700">
+                        <canvas id="stockChart"></canvas>
+                    </div>
+                    
+                    <!-- User Input -->
+                    <div class="flex items-center">
+                        <input id="userInput" type="text" placeholder="Type your message or ask a question..." class="flex-1 px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+                        <button onclick="sendMessage()" class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        <p>Try: "Show me Nifty chart with MACD" or "What's the best strategy for current market?"</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Market Watch -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">Market Watch</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-gray-700" onclick="showStockDetail('RELIANCE')">
+                            <div>
+                                <p class="font-medium dark:text-gray-300">Reliance</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">NSE: RELIANCE</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium dark:text-gray-300">₹2,845.60</p>
+                                <p class="text-xs text-green-500">+1.8%</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-gray-700" onclick="showStockDetail('TCS')">
+                            <div>
+                                <p class="font-medium dark:text-gray-300">TCS</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">NSE: TCS</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium dark:text-gray-300">₹3,912.45</p>
+                                <p class="text-xs text-green-500">+2.3%</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-gray-700" onclick="showStockDetail('HDFCBANK')">
+                            <div>
+                                <p class="font-medium dark:text-gray-300">HDFC Bank</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">NSE: HDFCBANK</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium dark:text-gray-300">₹1,542.80</p>
+                                <p class="text-xs text-red-500">-0.7%</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-gray-700" onclick="showStockDetail('INFY')">
+                            <div>
+                                <p class="font-medium dark:text-gray-300">Infosys</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">NSE: INFY</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium dark:text-gray-300">₹1,487.35</p>
+                                <p class="text-xs text-green-500">+1.5%</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded cursor-pointer dark:hover:bg-gray-700" onclick="showStockDetail('BHARTIARTL')">
+                            <div>
+                                <p class="font-medium dark:text-gray-300">Airtel</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">NSE: BHARTIARTL</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-medium dark:text-gray-300">₹1,156.90</p>
+                                <p class="text-xs text-green-500">+0.9%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Option Chain -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-lg dark:text-white">Nifty Option Chain</h3>
+                        <select class="text-xs border rounded px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full option-chain-table">
+                            <thead>
+                                <tr>
+                                    <th class="px-2 py-1 text-left">Calls OI</th>
+                                    <th class="px-2 py-1 text-left">Strike</th>
+                                    <th class="px-2 py-1 text-left">Puts OI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="dark:bg-gray-700 dark:hover:bg-gray-600">
+                                    <td class="px-2 py-1 text-red-500">12,345</td>
+                                    <td class="px-2 py-1 font-medium dark:text-gray-300">22,400</td>
+                                    <td class="px-2 py-1 text-green-500">23,456</td>
+                                </tr>
+                                <tr class="dark:bg-gray-700 dark:hover:bg-gray-600">
+                                    <td class="px-2 py-1 text-red-500">15,678</td>
+                                    <td class="px-2 py-1 font-medium dark:text-gray-300">22,450</td>
+                                    <td class="px-2 py-1 text-green-500">18,765</td>
+                                </tr>
+                                <tr class="dark:bg-gray-700 dark:hover:bg-gray-600">
+                                    <td class="px-2 py-1 text-red-500">18,901</td>
+                                    <td class="px-2 py-1 font-medium dark:text-gray-300">22,500</td>
+                                    <td class="px-2 py-1 text-green-500">15,432</td>
+                                </tr>
+                                <tr class="dark:bg-gray-700 dark:hover:bg-gray-600">
+                                    <td class="px-2 py-1 text-red-500">22,345</td>
+                                    <td class="px-2 py-1 font-medium dark:text-gray-300">22,550</td>
+                                    <td class="px-2 py-1 text-green-500">12,345</td>
+                                </tr>
+                                <tr class="dark:bg-gray-700 dark:hover:bg-gray-600">
+                                    <td class="px-2 py-1 text-red-500">25,678</td>
+                                    <td class="px-2 py-1 font-medium dark:text-gray-300">22,600</td>
+                                    <td class="px-2 py-1 text-green-500">10,987</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                        <p>PCR: 0.85 | Max Pain: 22,450</p>
+                    </div>
+                </div>
+                
+                <!-- Trading Signals -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <h3 class="font-semibold text-lg mb-3 dark:text-white">Trading Signals</h3>
+                    <div class="space-y-3">
+                        <div class="p-3 border border-green-200 rounded-lg signal-buy">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium dark:text-gray-300">BUY</span>
+                                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded dark:bg-green-900 dark:bg-opacity-30 dark:text-green-400">Strong</span>
+                            </div>
+                            <p class="text-sm dark:text-gray-300">TCS above ₹3,950</p>
+                            <p class="text-xs text-gray-600 mt-1 dark:text-gray-400">Breakout with volume surge, target ₹4,100, SL ₹3,850</p>
+                        </div>
+                        <div class="p-3 border border-red-200 rounded-lg signal-sell">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium dark:text-gray-300">SELL</span>
+                                <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded dark:bg-red-900 dark:bg-opacity-30 dark:text-red-400">Medium</span>
+                            </div>
+                            <p class="text-sm dark:text-gray-300">HDFC Bank below ₹1,530</p>
+                            <p class="text-xs text-gray-600 mt-1 dark:text-gray-400">Breakdown from support, target ₹1,480, SL ₹1,560</p>
+                        </div>
+                        <div class="p-3 border border-blue-200 rounded-lg signal-neutral">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium dark:text-gray-300">WATCH</span>
+                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded dark:bg-blue-900 dark:bg-opacity-30 dark:text-blue-400">Potential</span>
+                            </div>
+                            <p class="text-sm dark:text-gray-300">Reliance near ₹2,920</p>
+                            <p class="text-xs text-gray-600 mt-1 dark:text-gray-400">Key resistance level, watch for breakout/rejection</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trading Journal -->
+                <div class="bg-white rounded-xl shadow-md p-4 dark:bg-gray-800">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-lg dark:text-white">Trading Journal</h3>
+                        <button class="text-blue-600 hover:text-blue-800 text-sm dark:text-blue-400">
+                            <i class="fas fa-plus mr-1"></i> Add Trade
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="trade-log-card p-3 border rounded-lg dark:border-gray-700">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium dark:text-gray-300">BUY TCS</span>
+                                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded dark:bg-green-900 dark:bg-opacity-30 dark:text-green-400">+₹1,240</span>
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">
+                                <p>Entry: ₹3,820 | Exit: ₹3,950 | Qty: 10</p>
+                                <p>Held for 2 days | 3.4% return</p>
+                            </div>
+                        </div>
+                        <div class="trade-log-card p-3 border rounded-lg dark:border-gray-700">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium dark:text-gray-300">SELL RELIANCE</span>
+                                <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded dark:bg-red-900 dark:bg-opacity-30 dark:text-red-400">-₹560</span>
+                            </div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">
+                                <p>Entry: ₹2,890 | Exit: ₹2,830 | Qty: 5</p>
+                                <p>Held for 1 day | -2.1% return</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Vanta.js background
+        VANTA.NET({
+            el: "#aiCanvas",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x3b82f6,
+            backgroundColor: 0xf1f5f9,
+            points: 12.00,
+            maxDistance: 22.00,
+            spacing: 18.00
+        });
+
+        // Global variables
+        let currentMood = 'friendly';
+        let currentLanguage = 'en';
+        let isListening = false;
+        let recognition;
+        
+        // DOM elements
+        const authModal = document.getElementById('authModal');
+        const voiceModal = document.getElementById('voiceModal');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const voiceTranscript = document.getElementById('voiceTranscript');
+        const voiceAnimation = document.getElementById('voiceAnimation');
+        const startListeningBtn = document.getElementById('startListeningBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const chartContainer = document.getElementById('chartContainer');
+        
+        // Modal functions
+        function openAuthModal() {
+            authModal.classList.remove('hidden');
+        }
+        
+        function closeAuthModal() {
+            authModal.classList.add('hidden');
+        }
+        
+        function showLoginForm() {
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+        
+        function showSignupForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+        }
+        
+        function openVoiceModal() {
+            voiceModal.classList.remove('hidden');
+        }
+        
+        function closeVoiceModal() {
+            voiceModal.classList.add('hidden');
+            if (isListening) {
+                stopVoiceRecognition();
+            }
+        }
+        
+        // Language functions
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelector('#languageBtn span').textContent = 
+                lang === 'en' ? 'English' : 
+                lang === 'hi' ? 'हिंदी' : 
+                lang === 'es' ? 'Español' : 'Français';
+                
+            // In a real app, we would update all text content based on language
+            updateChatForLanguage(lang);
+        }
+        
+        function updateChatForLanguage(lang) {
+            // This would be more comprehensive in a real app
+            if (lang === 'hi') {
+                addAIMessage("भाषा हिंदी में बदल दी गई है! मैं आपकी कैसे मदद कर सकता हूँ?", true);
+            } else if (lang === 'es') {
+                addAIMessage("¡Idioma cambiado al español! ¿Cómo puedo ayudarte?", true);
+            } else if (lang === 'fr') {
+                addAIMessage("Langue changée en français! Comment puis-je vous aider?", true);
+            } else {
+                addAIMessage("Language changed to English! How can I help you?", true);
+            }
+        }
+        
+        // Mood functions
+        function setMood(mood) {
+            currentMood = mood;
+            document.querySelectorAll('.mood-selector button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // In a real app, this would change the AI's tone
+            if (mood === 'hindi') {
+                addAIMessage("मूड हिंदी मोड में बदल दिया गया है! अब मैं आपसे दोस्त की तरह बात करूंगा।", true);
+            } else {
+                addAIMessage(`My mood is now set to ${mood}. How can I assist you?`, true);
+            }
+        }
+        
+        // Voice recognition
+        function startVoiceRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                voiceStatus.textContent = "Voice recognition not supported in your browser";
+                return;
+            }
+            
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = document.getElementById('voiceLanguage').value;
+            
+            recognition.onstart = function() {
+                isListening = true;
+                startListeningBtn.innerHTML = '<i class="fas fa-microphone-slash mr-2"></i><span>Stop Listening</span>';
+                voiceStatus.textContent = "Listening... Speak now";
+                voiceAnimation.innerHTML = '<div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div>';
+            };
+            
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                voiceTranscript.innerHTML = finalTranscript + '<span class="text-gray-400">' + interimTranscript + '</span>';
+                
+                // If we have a final result, process it
+                if (finalTranscript) {
+                    processVoiceCommand(finalTranscript);
+                }
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Voice recognition error', event.error);
+                voiceStatus.textContent = "Error: " + event.error;
+                stopVoiceRecognition();
+            };
+            
+            recognition.onend = function() {
+                if (isListening) {
+                    recognition.start(); // Restart if we're still in listening mode
+                }
+            };
+            
+            recognition.start();
+        }
+        
+        function stopVoiceRecognition() {
+            if (recognition) {
+                recognition.stop();
+            }
+            isListening = false;
+            startListeningBtn.innerHTML = '<i class="fas fa-microphone mr-2"></i><span>Start Speaking</span>';
+            voiceStatus.textContent = "Click the microphone to start speaking";
+            voiceAnimation.innerHTML = '<div class="voice-wave"><span></span><span></span><span></span><span></span><span></span></div>';
+        }
+        
+        function processVoiceCommand(command) {
+            // In a real app, this would be much more sophisticated with NLP
+            addUserMessage(command);
+            
+            // Simple command processing
+            command = command.toLowerCase();
+            
+            if (command.includes("reliance") || command.includes("रिलायंस")) {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("रिलायंस इंडस्ट्रीज का वर्तमान भाव ₹2,845.60 है, जो आज 1.8% की वृद्धि के साथ कारोबार कर रहा है। शेयर ने अपने 50-दिन और 200-दिन के मूविंग एवरेज को पार कर लिया है। आरएसआई 62 पर है जो हल्के ओवरबॉट स्थिति को दर्शाता है।", true);
+                } else {
+                    addAIMessage("Reliance Industries is currently trading at ₹2,845.60, up 1.8% today. The stock has crossed above its 50-day and 200-day moving averages. RSI is at 62 indicating mildly overbought conditions.", true);
+                }
+            } else if (command.includes("nifty") || command.includes("निफ्टी")) {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("निफ्टी 50 वर्तमान में 22,415.65 पर कारोबार कर रहा है, जो आज 1.25% की वृद्धि के साथ है। प्रमुख समर्थन 22,350 और प्रतिरोध 22,500 स्तर पर है।", true);
+                } else {
+                    addAIMessage("Nifty 50 is currently trading at 22,415.65, up 1.25% today. Key support is at 22,350 and resistance at 22,500 levels.", true);
+                }
+                showChart('NIFTY');
+            } else if (command.includes("chart") || command.includes("चार्ट")) {
+                if (command.includes("rsi") || command.includes("आरएसआई")) {
+                    addAIMessage("Showing chart with RSI indicator...", true);
+                    showChart(command.includes("nifty") ? 'NIFTY' : 'RELIANCE', 'rsi');
+                } else if (command.includes("macd")) {
+                    addAIMessage("Showing chart with MACD indicator...", true);
+                    showChart(command.includes("nifty") ? 'NIFTY' : 'RELIANCE', 'macd');
+                } else {
+                    addAIMessage("Showing chart...", true);
+                    showChart(command.includes("nifty") ? 'NIFTY' : 'RELIANCE');
+                }
+            } else if (command.includes("strategy") || command.includes("रणनीति")) {
+                analyzeStrategy('breakout');
+            } else {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("मैं आपके प्रश्न को समझ नहीं पाया। क्या आप कृपया इसे दोबारा कह सकते हैं?", true);
+                } else {
+                    addAIMessage("I didn't understand your question. Could you please rephrase it?", true);
+                }
+            }
+        }
+        
+        // Chat functions
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                addUserMessage(message);
+                userInput.value = '';
+                
+                // Simulate AI response after a short delay
+                setTimeout(() => {
+                    generateAIResponse(message);
+                }, 500);
+            }
+        }
+        
+        function addUserMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex justify-end';
+            messageDiv.innerHTML = `
+                <div class="bg-blue-100 text-gray-800 p-3 rounded-lg user-bubble max-w-xs lg:max-w-md dark:bg-blue-800 dark:bg-opacity-30 dark:text-white">
+                    <p>${message}</p>
+                </div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function addAIMessage(message, isVoice = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex';
+            messageDiv.innerHTML = `
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-2">
+                    CA
+                </div>
+                <div class="bg-blue-50 text-gray-800 p-3 rounded-lg chat-bubble max-w-xs lg:max-w-md dark:bg-blue-900 dark:bg-opacity-30 dark:text-white">
+                    <p>${message}</p>
+                    ${isVoice ? '<p class="text-xs text-gray-500 mt-1 dark:text-gray-400"><i class="fas fa-microphone"></i> Voice input processed</p>' : ''}
+                </div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function generateAIResponse(userMessage) {
+            // In a real app, this would connect to an AI backend
+            userMessage = userMessage.toLowerCase();
+            
+            if (userMessage.includes("hi") || userMessage.includes("hello") || userMessage.includes("namaste")) {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("नमस्ते! आज मैं आपकी कैसे मदद कर सकता हूँ?");
+                } else {
+                    addAIMessage("Hello there! How can I help you today?");
+                }
+            } else if (userMessage.includes("reliance") || userMessage.includes("रिलायंस")) {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("रिलायंस इंडस्ट्रीज (RELIANCE.NS) - वर्तमान विश्लेषण:<br><br>वर्तमान मूल्य: ₹2,845.60<br>आज का परिवर्तन: +1.8% (₹50.20)<br>52 सप्ताह रेंज: ₹2,180 - ₹3,025<br><br>तकनीकी दृष्टिकोण: स्टॉक अपने 50-दिन और 200-दिन के मूविंग एवरेज से ऊपर कारोबार कर रहा है। आरएसआई 62 पर है जो हल्के ओवरबॉट स्थिति को दर्शाता है लेकिन तेजी का संकेत देता है।<br><br>मुख्य स्तर: समर्थन ₹2,780, प्रतिरोध ₹2,920");
+                } else {
+                    addAIMessage("Reliance Industries (RELIANCE.NS) - Current Analysis:<br><br>Current Price: ₹2,845.60<br>Today's Change: +1.8% (₹50.20)<br>52 Week Range: ₹2,180 - ₹3,025<br><br>Technical View: Stock is trading above its 50-day and 200-day moving averages. RSI at 62 suggests mildly overbought conditions but with bullish momentum.<br><br>Key Levels: Support at ₹2,780, Resistance at ₹2,920");
+                }
+            } else if (userMessage.includes("nifty") || userMessage.includes("निफ्टी")) {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("निफ्टी 50 वर्तमान में 22,415.65 पर कारोबार कर रहा है, जो आज 1.25% की वृद्धि के साथ है।<br><br>तकनीकी दृष्टिकोण: निफ्टी ने हाल ही में 22,300 के प्रतिरोध स्तर को पार किया है और अब अगले प्रतिरोध 22,500 की ओर बढ़ रहा है। आरएसआई 58 पर है जो तटस्थ से तेजी का संकेत देता है।<br><br>मुख्य स्तर:<br>समर्थन: 22,350 और 22,200<br>प्रतिरोध: 22,500 और 22,650");
+                } else {
+                    addAIMessage("Nifty 50 is currently trading at 22,415.65, up 1.25% today.<br><br>Technical View: Nifty has recently broken above the 22,300 resistance level and is now moving towards the next resistance at 22,500. RSI is at 58 indicating neutral to bullish momentum.<br><br>Key Levels:<br>Support: 22,350 and 22,200<br>Resistance: 22,500 and 22,650");
+                }
+                showChart('NIFTY');
+            } else if (userMessage.includes("chart") || userMessage.includes("चार्ट")) {
+                if (userMessage.includes("rsi") || userMessage.includes("आरएसआई")) {
+                    addAIMessage("Showing chart with RSI indicator...");
+                    showChart(userMessage.includes("nifty") ? 'NIFTY' : 'RELIANCE', 'rsi');
+                } else if (userMessage.includes("macd")) {
+                    addAIMessage("Showing chart with MACD indicator...");
+                    showChart(userMessage.includes("nifty") ? 'NIFTY' : 'RELIANCE', 'macd');
+                } else {
+                    addAIMessage("Showing chart...");
+                    showChart(userMessage.includes("nifty") ? 'NIFTY' : 'RELIANCE');
+                }
+            } else if (userMessage.includes("strategy") || userMessage.includes("रणनीति")) {
+                analyzeStrategy('breakout');
+            } else {
+                if (currentLanguage === 'hi') {
+                    addAIMessage("क्षमा करें, मैं आपके प्रश्न को पूरी तरह से नहीं समझ पाया। क्या आप कृपया इसे अलग तरीके से पूछ सकते हैं? या फिर आप मुझसे स्टॉक, बाजार के रुझान, तकनीकी विश्लेषण, या ट्रेडिंग रणनीतियों के बारे में पूछ सकते हैं।");
+                } else {
+                    addAIMessage("I'm sorry, I didn't fully understand your question. Could you please rephrase it? Or you can ask me about stocks, market trends, technical analysis, or trading strategies.");
+                }
+            }
+        }
+        
+        // Chart functions
+        function showChart(symbol, indicator = null) {
+            chartContainer.classList.remove('hidden');
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            
+            // Sample data - in a real app, this would come from an API
+            const labels = [];
+            const data = [];
+            const rsiData = [];
+            const macdData = [];
+            
+            for (let i = 30; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString());
+                
+                // Generate random-ish data
+                const basePrice = symbol === 'NIFTY' ? 22000 : 2800;
+                const randFactor = Math.random() * 2 - 1;
+                const price = basePrice + Math.sin(i/3) * 200 + randFactor * 100;
+                data.push(price);
+                
+                // Generate indicator data
+                rsiData.push(30 + Math.sin(i/5) * 40 + randFactor * 10);
+                macdData.push(-5 + Math.sin(i/4) * 10 + randFactor * 3);
+            }
+            
+            // Destroy previous chart if it exists
+            if (window.stockChart) {
+                window.stockChart.destroy();
+            }
+            
+            const datasets = [
+                {
+                    label: symbol + ' Price',
+                    data: data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y'
+                }
+            ];
+            
+            if (indicator === 'rsi') {
+                datasets.push({
+                    label: 'RSI (14)',
+                    data: rsiData,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                });
+            } else if (indicator === 'macd') {
+                datasets.push({
+                    label: 'MACD',
+                    data: macdData,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    tension: 0.1,
+                    yAxisID: 'y1'
+                });
+            }
+            
+            window.stockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: indicator !== null,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                    }
+                }
+            });
+            
+            // Scroll to chart
+            chartContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Trading functions
+        function addIndicator(indicator) {
+            let message = "";
+            if (currentLanguage === 'hi') {
+                message = {
+                    'rsi': "RSI (सापेक्ष शक्ति सूचकांक) 14-अवधि का उपयोग ओवरबॉट और ओवरसोल्ड स्थितियों की पहचान के लिए किया जाता है। 70 से ऊपर ओवरबॉट और 30 से नीचे ओवरसोल्ड माना जाता है।",
+                    'macd': "MACD (मूविंग एवरेज कन्वर्जेंस डाइवर्जेंस) एक ट्रेंड-फॉलोइंग मोमेंटम इंडिकेटर है जो दो मूविंग एवरेज के बीच संबंध दिखाता है।",
+                    'bollinger': "बोलिंगर बैंड वोलेटिलिटी दिखाते हैं और कीमत के चरम स्तरों की पहचान करने में मदद करते हैं।",
+                    'sma': "सिंपल मूविंग एवरेज (SMA) एक निर्दिष्ट अवधि में सुरक्षा की औसत कीमत की गणना करता है।",
+                    'ema': "एक्सपोनेंशियल मूविंग एवरेज (EMA) SMA के समान है लेकिन हाल के डेटा को अधिक वजन देता है।",
+                    'stochastic': "स्टोकेस्टिक ऑसिलेटर वर्तमान कीमत की तुलना एक निर्दिष्ट अवधि में कीमत की रेंज से करता है।"
+                }[indicator];
+            } else {
+                message = {
+                    'rsi': "RSI (Relative Strength Index) 14-period is used to identify overbought and oversold conditions. Above 70 is considered overbought, below 30 is oversold.",
+                    'macd': "MACD (Moving Average Convergence Divergence) is a trend-following momentum indicator that shows the relationship between two moving averages.",
+                    'bollinger': "Bollinger Bands show volatility and help identify price extremes.",
+                    'sma': "Simple Moving Average (SMA) calculates the average price of a security over a specified period.",
+                    'ema': "Exponential Moving Average (EMA) is similar to SMA but gives more weight to recent data.",
+                    'stochastic': "Stochastic Oscillator compares the current price to its price range over a specified period."
+                }[indicator];
+            }
+            
+            addAIMessage(message);
+            
+            // In a real app, we would actually add the indicator to the chart
+            if (chartContainer.classList.contains('hidden')) {
+                showChart('NIFTY', indicator);
+            } else {
+                // Refresh chart with new indicator
+                const currentSymbol = window.stockChart.data.datasets[0].label.split(' ')[0];
+                showChart(currentSymbol, indicator);
+            }
+        }
+        
+        function analyzeStrategy(strategy) {
+            let message = "";
+            if (currentLanguage === 'hi') {
+                message = {
+                    'breakout': "<b>ब्रेकआउट ट्रेडिंग रणनीति:</b><br><br>ब्रेकआउट ट्रेडिंग में प्रमुख समर्थन या प्रतिरोध स्तरों के ऊपर या नीचे कीमत के ब्रेकआउट की पहचान करना और उस दिशा में ट्रेड करना शामिल है।<br><br><b>वर्तमान बाजार में अनुप्रयोग:</b><br>निफ्टी ने हाल ही में 22,300 के प्रतिरोध स्तर को तोड़ दिया है। ब्रेकआउट की पुष्टि के लिए वॉल्यूम में वृद्धि देखी गई। अगला प्रतिरोध 22,500 पर है।<br><br><b>सुझाए गए ट्रेड:</b><br>- NIFTY में लॉन्ग पोजीशन लें, स्टॉप लॉस 22,250 के नीचे<br>- ब्रेकआउट स्टॉक जैसे TCS और INFY पर विचार करें",
+                    'pullback': "<b>पुलबैक ट्रेडिंग रणनीति:</b><br><br>पुलबैक रणनीति में एक मजबूत ट्रेंड में रिट्रेसमेंट के दौरान ट्रेड करना शामिल है, जिससे बेहतर एंट्री पॉइंट मिलता है।<br><br><b>वर्तमान बाजार में अनुप्रयोग:</b><br>IT सेक्टर में मजबूत अपट्रेंड है। TCS ₹3,950 के प्रतिरोध के पास पहुंचने के बाद छोटे पुलबैक की संभावना है।<br><br><b>सुझाए गए ट्रेड:</b><br>- TCS में ₹3,850 के आसपास पुलबैक पर खरीदारी करें, स्टॉप लॉस ₹3,800 के नीचे<br>- टार्गेट ₹4,100 (पिछले उच्च)",
+                    'mean-reversion': "<b>मीन रिवर्सन रणनीति:</b><br><br>मीन रिवर्सन इस धारणा पर आधारित है कि कीमतें समय के साथ उनके औसत स्तर पर वापस लौटती हैं।<br><br><b>वर्तमान बाजार में अनुप्रयोग:</b><br>HDFC बैंक अपने 200-दिन के मूविंग एवरेज (₹1,550) से नीचे आ गया है और अब ओवरसोल्ड RSI (28) दिखा रहा है।<br><br><b>सुझाए गए ट्रेड:</b><br>- HDFC बैंक में ₹1,530 के आसपास खरीदारी करें, स्टॉप लॉस ₹1,500 के नीचे<br>- टार्गेट ₹1,600 (200-DMA)"
+                }[strategy];
+            } else {
+                message = {
+                    'breakout': "<b>Breakout Trading Strategy:</b><br><br>Breakout trading involves identifying breakouts above key resistance or below support levels and trading in the direction of the breakout.<br><br><b>Application in Current Market:</b><br>Nifty has recently broken above the 22,300 resistance level. Volume has increased confirming the breakout. Next resistance is at 22,500.<br><br><b>Suggested Trades:</b><br>- Go long on NIFTY, stop loss below 22,250<br>- Consider breakout stocks like TCS and INFY",
+                    'pullback': "<b>Pullback Trading Strategy:</b><br><br>The pullback strategy involves trading during retracements in a strong trend, providing better entry points.<br><br><b>Application in Current Market:</b><br>IT sector is in strong uptrend. TCS likely to see small pullback after approaching ₹3,950 resistance.<br><br><b>Suggested Trades:</b><br>- Buy TCS on pullback around ₹3,850, stop loss below ₹3,800<br>- Target ₹4,100 (previous high)",
+                    'mean-reversion': "<b>Mean Reversion Strategy:</b><br><br>Mean reversion is based on the idea that prices tend to return to their average levels over time.<br><br><b>Application in Current Market:</b><br>HDFC Bank has fallen below its 200-day moving average (₹1,550) and now shows oversold RSI (28).<br><br><b>Suggested Trades:</b><br>- Buy HDFC Bank around ₹1,530, stop loss below ₹1,500<br>- Target ₹1,600 (200-DMA)"
+                }[strategy];
+            }
+            
+            addAIMessage(message);
+        }
+        
+        function showStockDetail(symbol) {
+            const stocks = {
+                'RELIANCE': {
+                    name: "Reliance Industries",
+                    price: "₹2,845.60",
+                    change: "+1.8%",
+                    high: "₹2,865.20",
+                    low: "₹2,810.40",
+                    pe: "28.5",
+                    sector: "Oil & Gas"
+                },
+                'TCS': {
+                    name: "Tata Consultancy Services",
+                    price: "₹3,912.45",
+                    change: "+2.3%",
+                    high: "₹3,925.00",
+                    low: "₹3,845.60",
+                    pe: "32.1",
+                    sector: "Information Technology"
+                },
+                'HDFCBANK': {
+                    name: "HDFC Bank",
+                    price: "₹1,542.80",
+                    change: "-0.7%",
+                    high: "₹1,560.40",
+                    low: "₹1,535.20",
+                    pe: "18.2",
+                    sector: "Banking"
+                },
+                'INFY': {
+                    name: "Infosys",
+                    price: "₹1,487.35",
+                    change: "+1.5%",
+                    high: "₹1,495.80",
+                    low: "₹1,465.40",
+                    pe: "26.8",
+                    sector: "Information Technology"
+                },
+                'BHARTIARTL': {
+                    name: "Bharti Airtel",
+                    price: "₹1,156.90",
+                    change: "+0.9%",
+                    high: "₹1,165.40",
+                    low: "₹1,145.60",
+                    pe: "58.3",
+                    sector: "Telecommunication"
+                }
+            };
+            
+            const stock = stocks[symbol];
+            let message = "";
+            
+            if (currentLanguage === 'hi') {
+                message = `
+                    <b>${stock.name} (${symbol})</b><br><br>
+                    वर्तमान मूल्य: ${stock.price}<br>
+                    आज का परिवर्तन: <span class="${stock.change.includes('+') ? 'text-green-500' : 'text-red-500'}">${stock.change}</span><br>
+                    दिन का उच्च: ${stock.high}<br>
+                    दिन का निम्न: ${stock.low}<br>
+                    P/E अनुपात: ${stock.pe}<br>
+                    सेक्टर: ${stock.sector}<br><br>
+                    <button onclick="showChart('${symbol}')" class="text-sm text-blue-600 hover:underline dark:text-blue-400">चार्ट देखें →</button>
+                `;
+            } else {
+                message = `
+                    <b>${stock.name} (${symbol})</b><br><br>
+                    Current Price: ${stock.price}<br>
+                    Today's Change: <span class="${stock.change.includes('+') ? 'text-green-500' : 'text-red-500'}">${stock.change}</span><br>
+                    Day's High: ${stock.high}<br>
+                    Day's Low: ${stock.low}<br>
+                    P/E Ratio: ${stock.pe}<br>
+                    Sector: ${stock.sector}<br><br>
+                    <button onclick="showChart('${symbol}')" class="text-sm text-blue-600 hover:underline dark:text-blue-400">View Chart →</button>
+                `;
+            }
+            
+            addAIMessage(message);
+        }
+        
+        function showNewsDetail(newsId) {
+            const newsItems = {
+                'n1': {
+                    headline: "RBI Keeps Repo Rate Unchanged at 6.5%",
+                    summary: "The Reserve Bank of India's Monetary Policy Committee (MPC) has decided to keep the repo rate unchanged at 6.5% in its bi-monthly policy review, in line with market expectations. The central bank maintained its stance of 'withdrawal of accommodation' to ensure inflation progressively aligns with the target while supporting growth.",
+                    impact: "Banking stocks showed mixed reactions, while rate-sensitive sectors like real estate remained stable."
+                },
+                'n2': {
+                    headline: "Infosys Q4 Results Beat Estimates",
+                    summary: "IT major Infosys reported a 12% year-on-year growth in net profit at ₹6,128 crore for the quarter ended March 2024, beating analyst estimates. The company announced a final dividend of ₹16 per share and gave a revenue growth guidance of 4-7% for FY25 in constant currency terms.",
+                    impact: "Infosys shares rose 2.5% in early trade, lifting other IT stocks as well."
+                },
+                'n3': {
+                    headline: "Global Markets Rally on Fed Rate Cut Hopes",
+                    summary: "Global stock markets rallied to record highs after US inflation data came in softer than expected, fueling hopes that the Federal Reserve may cut interest rates sooner than anticipated. The S&P 500 crossed 5,200 for the first time, while European and Asian markets also saw strong gains.",
+                    impact: "Indian markets expected to open higher tracking global cues, with IT stocks likely to benefit most."
+                }
+            };
+            
+            const news = newsItems[newsId];
+            let message = "";
+            
+            if (currentLanguage === 'hi') {
+                message = `
+                    <b>${news.headline}</b><br><br>
+                    ${news.summary}<br><br>
+                    <b>बाजार पर प्रभाव:</b> ${news.impact}<br><br>
+                    <button onclick="analyzeNewsImpact('${newsId}')" class="text-sm text-blue-600 hover:underline dark:text-blue-400">समाचार के प्रभाव का विश्लेषण करें →</button>
+                `;
+            } else {
+                message = `
+                    <b>${news.headline}</b><br><br>
+                    ${news.summary}<br><br>
+                    <b>Market Impact:</b> ${news.impact}<br><br>
+                    <button onclick="analyzeNewsImpact('${newsId}')" class="text-sm text-blue-600 hover:underline dark:text-blue-400">Analyze News Impact →</button>
+                `;
+            }
+            
+            addAIMessage(message);
+        }
+        
+        function analyzeNewsImpact(newsId) {
+            let message = "";
+            
+            if (currentLanguage === 'hi') {
+                message = `
+                    <b>समाचार प्रभाव विश्लेषण:</b><br><br>
+                    ${newsId === 'n1' ? 
+                    "RBI की नीति निर्णय बाजार की अपेक्षाओं के अनुरूप था। बैंकिंग शेयरों में मिश्रित प्रतिक्रिया देखी गई, जिसमें HDFC बैंक और ICICI बैंक में मामूली गिरावट देखी गई, जबकि SBI में मजबूती रही। रियल एस्टेट सेक्टर स्थिर रहा क्योंकि ब्याज दरों में कोई बदलाव नहीं हुआ है।" : 
+                    newsId === 'n2' ? 
+                    "इंफोसिस के बेहतर-से-अनुमानित परिणामों ने पूरे IT सेक्टर में सकारात्मक भावना को बढ़ावा दिया है। TCS और HCL टेक्नोलॉजीज जैसे अन्य IT शेयरों में भी 1-2% की बढ़त देखी गई। कंपनी का 4-7% की राजस्व वृद्धि मार्गदर्शन IT सेक्टर के लिए मध्यम सकारात्मक दृष्टिकोण का संकेत देता है।" :
+                    "वैश्विक बाजारों में तेजी से भारतीय बाजारों पर सकारात्मक प्रभाव पड़ने की उम्मीद है, विशेष रूप से IT शेयरों पर जो अमेरिकी बाजारों से मजबूत संबंध रखते हैं। निफ्टी IT इंडेक्स आज 1.5% ऊपर खुल सकता है। फेड रेट कट की उम्मीदों से FII निवेश में वृद्धि हो सकती है, जो भारतीय बाजारों के लिए सकारात्मक है।"}
+                    <br><br>
+                    <b>सुझाए गए कार्य:</b> ${newsId === 'n1' ? 
+                    "बैंकिंग शेयरों में किसी भी कमजोरी को खरीदारी के अवसर के रूप में देखें, विशेष रूप से HDFC बैंक और ICICI बैंक में।" : 
+                    newsId === 'n2' ? 
+                    "IT सेक्टर में लॉन्ग पोजीशन पर विचार करें, विशेष रूप से इंफोसिस और TCS में।" :
+                    "IT सेक्टर में मजबूत खरीदारी पर ध्यान दें, विशेष रूप से अमेरिकी एक्सपोजर वाले बड़े कैप स्टॉक्स में।"}
+                `;
+            } else {
+                message = `
+                    <b>News Impact Analysis:</b><br><br>
+                    ${newsId === 'n1' ? 
+                    "RBI's policy decision was in line with market expectations. Banking stocks saw mixed reactions, with HDFC Bank and ICICI Bank seeing minor declines while SBI remained strong. Real estate sector stayed stable as there's no change in interest rates." : 
+                    newsId === 'n2' ? 
+                    "Infosys' better-than-expected results have boosted positive sentiment across the IT sector. Other IT stocks like TCS and HCL Technologies also saw 1-2% gains. The company's 4-7% revenue growth guidance signals moderately positive outlook for the IT sector." :
+                    "Global market rally is expected to have positive impact on Indian markets, particularly on IT stocks which have strong correlation with US markets. Nifty IT index may open 1.5% higher today. Fed rate cut hopes may increase FII inflows, which is positive for Indian markets."}
+                    <br><br>
+                    <b>Suggested Actions:</b> ${newsId === 'n1' ? 
+                    "Consider any weakness in banking stocks as buying opportunities, particularly in HDFC Bank and ICICI Bank." : 
+                    newsId === 'n2' ? 
+                    "Consider long positions in IT sector, particularly in Infosys and TCS." :
+                    "Focus on strong buying in IT sector, especially large cap stocks with US exposure."}
+                `;
+            }
+            
+            addAIMessage(message);
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Allow sending message with Enter key
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Dark mode toggle
+            document.getElementById('darkModeToggle').addEventListener('click', function() {
+                document.body.classList.toggle('dark');
+                const icon = this.querySelector('i');
+                if (document.body.classList.contains('dark')) {
+                    document.documentElement.style.backgroundColor = '#111827';
+                } else {
+                    document.documentElement.style.backgroundColor = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
